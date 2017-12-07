@@ -1,8 +1,12 @@
 # Neuroevolution Through Erlang, Book Source Code
 
-A repository for source code as I work through the book [Handbook of Neuroevolution Through Erlang][book-neuroevolution-erlang].
-This repository uses [version 3 of GNU General Public License][license-gnu-gpl-v3] because that is what the
-[official source code repository for the book][book-neuroevolution-erlang-source] uses.
+A repository for source code as I work through the book
+[Handbook of Neuroevolution Through Erlang][book-neuroevolution-erlang].
+This repository uses [version 3 of GNU General Public License][license-gnu-gpl-v3] because that is
+what the [official source code repository for the book][book-neuroevolution-erlang-source] uses.
+
+**Note:**  Some of code may be slightly different from the official repository.
+Considering referring to the official repository instead of this one.
 
 ## References:
 
