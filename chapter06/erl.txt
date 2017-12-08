@@ -1,0 +1,12 @@
+cat erl.txt
+erl
+Copy the following into the erlang prompt.
+
+c(cortex).
+c(neuron).
+c(sensor).
+c(actuator).
+c(exoself).
+constructor:construct_Genotype(ffnn, rng, pts, [1, 2]).
+exoself:map(ffnn).
+
