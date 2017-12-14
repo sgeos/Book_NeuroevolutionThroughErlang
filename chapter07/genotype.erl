@@ -6,14 +6,14 @@
 % This code is licensed under the version 3 of the GNU General Public License. Please see the LICENSE
 % file that accompanies this project for the terms of use.
 
--module(constructor).
+% !!! No explicit mention made of chapter07/genotype.erl corresponding to chapter06/constructor.erl.
+
+-module(genotype).
 %-compile(export_all).
 -export(
   [
-    construct_Genotype/3,
-    construct_Genotype/4,
-    create_Sensor/1,
-    create_Actuator/1,
+    construct/2,
+    construct/3,
     create_NeuroLayers/4,
     create_NeuroLayers/8,
     create_NeuroLayer/5,
@@ -22,15 +22,27 @@
     create_NeuralWeights/2,
     generate_ids/2,
     generate_id/0,
-    create_Cortex/4
+    create_Cortex/4,
+    save_genotype/2,
+    save_to_file/2,
+    load_from_file/1,
+    read/2,
+    write/2,
+    print/1
   ]
 ).
 -include("records.hrl").
 
-% The construct_Genotype function accepts the name of the file to which we'll save the genotype,
-% sensor name, actuator name, and the hidden layer density parameters. We have to generate unique Ids
-% for every sensor and actuator. The sensor and actuator names are used as input to the create_Sensor
-% and create_Actuator functions, which in turn generate the actual Sensor and Actuator representing
+% !!! Using cryptographically strong seed instead of erlang:now() and random:seed().
+% !!! reference: (see How to generate cryptographically strong seeds with the new rand library)
+% https://hashrocket.com/blog/posts/the-adventures-of-generating-random-numbers-in-erlang-and-elixir
+%
+% !!! construct_Genotype function -> construct function
+%
+% The construct function accepts the name of the file to which we'll save the genotype, sensor name,
+% actuator name, and the hidden layer density parameters. We have to generate unique Ids for every
+% sensor and actuator. The sensor and actuator names are used as input to the create_Sensor and
+% create_Actuator functions, which in turn generate the actual Sensor and Actuator representing
 % tuples. We create unique Ids for sensors and actuators so that when in the future a NN uses 2 or
 % more sensors or actuators of the same type, we will be able to differentiate between them using
 % their Ids. After the Sensor and Actuator tuples are generated, we extract the NN's input and output
@@ -41,14 +53,17 @@
 % create_NeuroLayers function to generate the Neuron representing tuples. We then update the Sensor
 % and Actuator records with proper fanin and fanout ids from the freshly created Neuron tuples,
 % composes the Cortex, and write the genotype to file.
-construct_Genotype(SensorName, ActuatorName, HiddenLayerDensities) ->
-  construct_Genotype(ffnn, SensorName, ActuatorName, HiddenLayerDensities).
-construct_Genotype(FileName, SensorName, ActuatorName, HiddenLayerDensities) ->
-  S = create_Sensor(SensorName),
-  A = create_Actuator(ActuatorName),
+construct(Morphology, HiddenLayerDensities) ->
+  construct(ffnn, Morphology, HiddenLayerDensities).
+construct(FileName, Morphology, HiddenLayerDensities) ->
+  <<I1:32/unsigned-integer, I2:32/unsigned-integer, I3:32/unsigned-integer>> =
+    crypto:strong_rand_bytes(12),
+  rand:seed(exsplus, {I1, I2, I3}),
+  S = morphology:get_InitSensor(Morphology),
+  A = morphology:get_InitActuator(Morphology),
   Output_VL = A#actuator.vl,
   LayerDensities = lists:append(HiddenLayerDensities, [Output_VL]),
-  Cx_Id = {cortex, generate_id()},
+  Cx_Id = cortex,
 
   Neurons = create_NeuroLayers(Cx_Id, S, A, LayerDensities),
   [Input_Layer | _] = Neurons,
@@ -59,37 +74,9 @@ construct_Genotype(FileName, SensorName, ActuatorName, HiddenLayerDensities) ->
   Sensor = S#sensor{cx_id = Cx_Id, fanout_ids = FL_NIds},
   Actuator = A#actuator{cx_id = Cx_Id, fanin_ids = LL_NIds},
   Cortex = create_Cortex(Cx_Id, [S#sensor.id], [A#actuator.id], NIds),
-  Genotype = lists:flatten([Cortex, Sensor, Actuator | Neurons]),
-  {ok, File} = file:open(FileName, write),
-  lists:foreach(fun(X) -> io:format(File, "~p.~n", [X]) end, Genotype),
-  file:close(File),
+  Genotype = lists:flatten([Cortex, Sensor, Actuator, Neurons]),
+  save_genotype(FileName, Genotype),
   Genotype.
-
-% Every sensor and actuator uses some kind of function associated with it. A function that either
-% polls the environment for sensory signals (in the case of a sensor) or acts upon the environment
-% (in the case of an actuator). It is a function that we need to define and program before it is
-% used, and the name of the function is the same as the name of the sensor or actuator it self. For
-% example, the create_Sensor/1 has specified only the rng sensor, because that is the only sensor
-% function we've finished developing. The rng function has its own vl specification, which will
-% determine the number of weights that a neuron will need to allocate if it is to accept this
-% sensor's output vector. The same principles apply to the create_Actuator function. Both,
-% create_Sensor and create_Actuator function, given the name of the sensor or actuator, will return
-% a record with all the specifications of that element, each with its own unique Id.
-create_Sensor(SensorName) ->
-  case SensorName of
-    rng ->
-      #sensor{id={sensor, generate_id()}, name=rng, vl=2};
-    _ ->
-      exit("System does not yet support a sensor by the name: ~p.", [SensorName])
-  end.
-
-create_Actuator(ActuatorName) ->
-  case ActuatorName of
-    pts ->
-      #actuator{id={actuator, generate_id()}, name=pts, vl=1};
-    _ ->
-      exit("System does not yet support an actuator by the name: ~p.", [ActuatorName])
-  end.
 
 % !!! should be create_NeuroLayers/4 and create_NeuroLayers/8
 %
@@ -108,6 +95,8 @@ create_NeuroLayers(Cx_Id, Sensor, Actuator, LayerDensities) ->
   NIds = [ {neuron, {1, Id}} || Id <- generate_ids(FL_Neurons, []) ],
   create_NeuroLayers(Cx_Id, Actuator#actuator.id, 1, Tot_Layers, Input_IdPs, NIds, Next_LDs, []).
 
+% !!! should be create_NeuroLayers/4 and create_NeuroLayers/8
+%
 % During the first iteration, the first layer neuron ids constructed in create_NeuroLayers/3 are held
 % in the NIds variable. In create_NeuroLayers/7, with every iteration we generate the Output_NIds,
 % which are the Ids of the neurons in the next layer. The last layer is a special case which occurs
@@ -206,4 +195,50 @@ generate_id() ->
 % element. The Cortex element needs to know the Id of every Neuron, Sensors, and Actuator in the NN. 
 create_Cortex(Cx_Id, S_Ids, A_Ids, NIds) ->
   #cortex{id=Cx_Id, sensor_ids=S_Ids, actuator_ids=A_Ids, nids = NIds}.
+
+% The save_genotype/2 function expects that the Genotype is a list composed of the neuron, sensor,
+% actuator, cortex, and exoself elements. The function creates a new ets table, writes all the
+% element representing tuples from the Genotype list to the ets table, and then writes the ets table
+% to file.
+save_genotype(FileName, Genotype) ->
+  TId = ets:new(FileName, [public, set, {keypos, 2}]),
+  [ets:insert(TId, Element) || Element <- Genotype],
+  ets:tab2file(TId, FileName).
+
+% !!! save_genotype() and save_to_file() have the same parameters but in reverse order.
+%
+% The save_to_file/2 function saves the ets table by the name Genotype to the file by the name
+% FileName.
+save_to_file(Genotype, FileName) ->
+  ets:tab2file(Genotype, FileName).
+
+% The load_from_file/1 loads an ets representing file by the name FileName, returning the ets table
+% id to the caller.
+load_from_file(FileName) ->
+  {ok, TId} = ets:file2tab(FileName),
+  TId.
+
+% The read/2 function reads a record associated with Key from the ets table with the id TId,
+% returning the record R to the caller. It expects that only a single record exists with the
+% specified Key.
+read(TId, Key) ->
+  [R] = ets:lookup(TId, Key),
+  R.
+
+% The function write/2 writes the record R to the ets table with the id TId.
+write(TId, R) ->
+  ets:insert(TId, R).
+
+% The function print/1 reads a stored Genotype from the file FileName, and then prints to console all
+% the elements making up the NN’s genotype.
+print(FileName) ->
+  Genotype = load_from_file(FileName),
+  Cx = read(Genotype, cortex),
+  SIds = Cx#cortex.sensor_ids,
+  NIds = Cx#cortex.nids,
+  AIds = Cx#cortex.actuator_ids,
+  io:format("~p~n", [Cx]),
+  [io:format("~p~n", [read(Genotype, Id)]) || Id <- SIds],
+  [io:format("~p~n", [read(Genotype, Id)]) || Id <- NIds],
+  [io:format("~p~n", [read(Genotype, Id)]) || Id <- AIds].
 

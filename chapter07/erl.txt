@@ -1,0 +1,8 @@
+cat erl.txt
+erl
+Copy the following into the erlang prompt.
+
+make:all([load]).
+trainer:go(xor_mimic, [2], inf, inf, 99.9).
+benchmarker:go(xor_mimic, [2], inf, inf, 100, 100).
+
