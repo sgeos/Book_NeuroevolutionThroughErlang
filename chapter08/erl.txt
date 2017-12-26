@@ -1,0 +1,62 @@
+cat erl.txt
+erl
+Copy the following into the erlang prompt.
+
+% rebuild and load all modules
+make:all( [ load ] ).
+
+% test polis
+polis:create().
+polis:start().
+polis:stop().
+
+% test genotype
+polis:start().
+genotype:test().
+genotype:create_test().
+genotype:create_test().
+polis:stop().
+
+% test genome_mutator
+polis:start().
+genome_mutator:test().
+polis:stop().
+
+% test genome_mutator add_bias
+polis:start().
+genotype:create_test().
+genome_mutator:test( test, add_bias ).
+genotype:print( test ).
+polis:stop().
+
+% test genome_mutator outsplice
+polis:start().
+genotype:create_test().
+genome_mutator:test( test, outsplice ).
+genotype:print( test ).
+polis:stop().
+
+% test all mutators
+polis:start().
+genotype:create_test().
+Mutators = [
+    mutate_weights,
+    add_bias,
+    mutate_af,
+    %remove_bias,
+    add_outlink,
+    %remove_outlink,
+    add_inlink,
+    %remove_inlink,
+    add_neuron,
+    %remove_neuron,
+    outsplice,
+    add_sensor,
+    %remove_sensor,
+    add_actuator
+    %remove_acutator
+].
+[ { M, D } || { M, { _R, D } } <- [ { M, genome_mutator:test( test, M ) } || M <- Mutators ] ].
+genotype:print( test ).
+polis:stop().
+
