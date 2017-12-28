@@ -1,0 +1,49 @@
+cat erl.txt
+erl
+Copy the following into the erlang prompt.
+
+% rebuild and reload all modules
+polis:sync(). % OR make:all( [ load ] ).
+
+% generate database
+polis:create().
+
+% basic XOR test
+polis:start().
+genotype:create_test().
+exoself:start( test, void ).
+
+% modify and reload population_monitor.erl
+-define(
+  INIT_CONSTRAINTS,
+  [
+    #constraint{
+      morphology = Morphology,
+      connection_architecture = CA,
+      population_evo_alg_f = generational
+    }
+    || Morphology <- [ xor_mimic ], CA <- [ feedforward ]
+  ]
+).
+c( population_monitor ).
+
+% population monitor test
+population_monitor:test().
+
+% modify and reload population_monitor.erl
+-define(
+  INIT_CONSTRAINTS,
+  [
+    #constraint{
+      morphology = Morphology,
+      connection_architecture = CA,
+      population_evo_alg_f = steady_state
+    }
+    || Morphology <- [ xor_mimic ], CA <- [ feedforward ]
+  ]
+).
+c( population_monitor ).
+
+% population monitor test
+population_monitor:test().
+
