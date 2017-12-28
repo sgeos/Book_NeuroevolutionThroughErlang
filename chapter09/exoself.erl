@@ -360,6 +360,10 @@ convert_PIdPs2IdPs( _IdsNPIds, [], Acc ) ->
 % The terminate_phenotype/5 function termiantes sensors, actuators, neurons, all private scapes, and
 % the cortex which composes the NN based system.
 terminate_phenotype( Cx_PId, SPIds, NPIds, APIds, ScapePIds ) ->
+  io:format(
+    "Terminating the phenotype:~nCx_PId: ~p~nSPIds: ~p~nNPIds: ~p~nAPIds: ~p~nScapePids: ~p~n",
+    [ Cx_PId, SPIds, NPIds, APIds, ScapePIds ]
+  ),
   [ PId ! { self(), terminate } || PId <- SPIds ],
   [ PId ! { self(), terminate } || PId <- APIds ],
   [ PId ! { self(), terminate } || PId <- NPIds ],

@@ -1,0 +1,138 @@
+cat erl.txt
+erl
+Copy the following into the erlang prompt.
+
+% rebuild and load all modules
+make:all( [ load ] ).
+
+% generate database
+polis:create().
+
+% test mutate_weights
+polis:start().
+genotype:create_test().
+genome_mutator:test( test, mutate_weights ).
+genotype:print( test ).
+exoself:start( test, void ).
+genotype:print( test ).
+polis:stop().
+
+% test add_bias
+polis:start().
+genotype:create_test().
+genome_mutator:test( test, add_bias ).
+genotype:print( test ).
+exoself:start( test, void ).
+genotype:print( test ).
+polis:stop().
+
+% test mutate_af
+polis:start().
+genotype:create_test().
+genome_mutator:test( test, mutate_af ).
+genotype:print( test ).
+exoself:start( test, void ).
+genotype:print( test ).
+polis:stop().
+
+% test add_outlink
+polis:start().
+genotype:create_test().
+genome_mutator:test( test, add_outlink ).
+genotype:print( test ).
+exoself:start( test, void ).
+genotype:print( test ).
+polis:stop().
+
+% test add_inlink
+polis:start().
+genotype:create_test().
+genome_mutator:test( test, add_inlink ).
+genotype:print( test ).
+exoself:start( test, void ).
+genotype:print( test ).
+polis:stop().
+
+% test add_neuron
+polis:start().
+genotype:create_test().
+genome_mutator:test( test, add_neuron ).
+genotype:print( test ).
+exoself:start( test, void ).
+genotype:print( test ).
+polis:stop().
+
+% test outsplice
+polis:start().
+genotype:create_test().
+genome_mutator:test( test, outsplice ).
+genotype:print( test ).
+exoself:start( test, void ).
+genotype:print( test ).
+polis:stop().
+
+% test add_sensor, failure expected
+polis:start().
+genotype:create_test().
+genome_mutator:test( test, add_sensor ).
+genotype:print( test ).
+exoself:start( test, void ).
+genotype:print( test ).
+polis:stop().
+
+% test add_actuator, failure expected
+polis:start().
+genotype:create_test().
+genome_mutator:test( test, add_actuator ).
+genotype:print( test ).
+exoself:start( test, void ).
+genotype:print( test ).
+polis:stop().
+
+% easier manual testing
+TestMutation = fun
+  ( Mutation, true ) ->
+    make:all( [ load ] ),
+    polis:create(),
+    polis:stop(),
+    polis:start(),
+    genotype:create_test(),
+    genome_mutator:test( test, Mutation ),
+    exoself:start( test, void );
+  ( Mutation, false ) ->
+    polis:stop(),
+    polis:start(),
+    genotype:create_test(),
+    genome_mutator:test( test, Mutation ),
+    exoself:start( test, void )
+end.
+TestMutation( mutate_weights, true ).
+TestMutation( add_bias, true ).
+TestMutation( mutate_af, true ).
+TestMutation( add_outlink, true ).
+TestMutation( add_inlink, true ).
+TestMutation( add_neuron, true ).
+TestMutation( outsplice, true ).
+TestMutation( add_sensor, true ).  % failure expected
+TestMutation( add_actuator, true ).  % failure expected
+
+% automatic testing with genome_mutator:long_test()
+polis:start().
+genome_mutator:long_test( 300 ).
+polis:stop().
+
+% evolving a solution with population_monitor:test()
+polis:start().
+population_monitor:test().
+polis:stop().
+
+% testing different settings
+% MAX_ATTEMPTS in exoself.erl
+% connection_architecture in records.hrl
+% various settings in population_monitor.erl
+polis:sync().
+polis:start().
+genome_mutator:long_test( 10 ).
+genotype:print( test ).
+polis:stop().
+

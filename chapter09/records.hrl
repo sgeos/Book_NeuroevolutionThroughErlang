@@ -45,6 +45,7 @@
   constraint,
   {
     morphology = xor_mimic,
+    connection_architecture = recurrent, % recurrent | feedforward
     neural_afs = [
       tanh,
       cos,
