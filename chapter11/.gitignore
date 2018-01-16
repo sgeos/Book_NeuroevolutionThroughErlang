@@ -1,0 +1,8 @@
+# erlang
+Mnesia.*
+
+# genotype files
+ffnn
+best
+experimental
+
