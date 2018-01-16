@@ -1,0 +1,65 @@
+cat erl.txt
+erl
+Copy the following into the erlang prompt.
+
+% rebuild and reload all modules, then generate database
+polis:sync(). % OR make:all( [ load ] ).
+polis:reset(). % OR polis:create().
+
+% update population_monitor.erl
+-define(
+  INIT_CONSTRAINTS,
+  [
+    #constraint{
+      morphology = Morphology,
+      connection_architecture = CA,
+      population_evo_alg_f = generational
+    }
+    || Morphology <- [ xor_mimic ], CA <- [ feedforward ]
+  ]
+).
+
+% test generational population monitor
+c( population_monitor ).
+polis:start().
+population_monitor:test().
+polis:stop().
+
+% update population_monitor.erl
+-define(
+  INIT_CONSTRAINTS,
+  [
+    #constraint{
+      morphology = Morphology,
+      connection_architecture = CA,
+      population_evo_alg_f = steady_state
+    }
+    || Morphology <- [ xor_mimic ], CA <- [ feedforward ]
+  ]
+).
+
+% test steady state population monitor
+c( population_monitor ).
+polis:start().
+population_monitor:test().
+polis:stop().
+
+% test benchmarker
+polis:start().
+benchmarker:start( test ).
+polis:stop().
+% results should show up in benchmarks directory
+% see graph_xor_mimic_report_Graphs and report_Trace_Acc files
+% note that benchmark output is suitable for use with gnuplot
+
+% test interrupted experiment
+polis:start().
+benchmarker:start( test ).
+% enter [ Ctrl-C ] to interrupt the experiment
+% restart erl
+polis:start().
+mnesia:dirty_read( { experiment, test } ).
+benchmarker:continue( test ).
+mnesia:dirty_read( { experiment, test } ).
+polis:stop().
+

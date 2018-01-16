@@ -1,0 +1,11 @@
+# erlang
+Mnesia.*
+
+# genotype files
+ffnn
+best
+experimental
+
+# benchmarker directory
+benchmarks
+
