@@ -18,6 +18,8 @@
     get_Sensors/1,
     get_Actuators/1,
     xor_mimic/1,
+    pole_balancing/1,
+    discrete_tmaze/1,
     generate_id/0
   ]
 ).
@@ -58,6 +60,54 @@ xor_mimic( sensors ) ->
 xor_mimic( actuators ) ->
   [
     #actuator{ name=xor_SendOutput, scape={ private, xor_sim }, vl=1 }
+  ].
+
+% Both, the pole balancing sensor and actuator, interface with the pole balancing simulation, a
+% private scape. The type of problem the pole balancing simulation is used as depends on the sensor
+% and acutuator parameters. The sensor's vl and parameters specify that the sensor will request the
+% private scape for the cart's and pole's position and angular position respectively. The actuator's
+% parameters specify that the scape should use without_damping type of fitness, and that since only a
+% single pole is being used, that the termination condition associated with the second pole will be
+% zeroed out, by being multiplied by the specified 0 value. When instead of using 0, we use 1, the
+% private scape would use the angular position of the second pole as an element in calculating the
+% fitness score of the interfacing agent, and using that angular position for the purpose of
+% calculating whether termination condition has been reached by the problem.
+pole_balancing( sensors ) ->
+  [
+    #sensor{
+      name = pb_GetInput,
+      scape = { private, pb_sim },
+      vl = 3,
+      parameters = [ 3 ]
+    }
+  ];
+pole_balancing( actuators ) ->
+  [
+    #actuator{
+      name = pb_SendOutput,
+      scape = { private, pb_sim },
+      vl = 1,
+      parameters = [ with_damping, 1 ]
+    }
+  ].
+
+discrete_tmaze(sensors)->
+  [
+    #sensor{
+      name = dtm_GetInput,
+      scape = { private, dtm_sim },
+      vl = 4,
+      parameters = [ all ]
+    }
+  ];
+discrete_tmaze(actuators)->
+  [
+    #actuator{
+      name = dtm_SendOutput,
+      scape = { private, dtm_sim },
+      vl = 1,
+      parameters = []
+    }
   ].
 
 % !!! Consider using something like erlang:unique_integer([monotonic]) instead of erlang:timestamp().
