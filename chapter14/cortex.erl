@@ -18,7 +18,17 @@
 -include( "records.hrl" ).
 %-record(
 %  state,
-%  { id, exoself_pid, spids, npids, apids, cycle_acc=0, fitness_acc=0, endflag=0, status }
+%  {
+%    id,
+%    exoself_pid,
+%    spids,
+%    npids,
+%    apids,
+%    cycle_acc = 0,
+%    fitness_acc = 0,
+%    endflag = 0,
+%    status
+%  }
 %).
 
 % The gen/2 function spawns the cortex element, which immediately starts to wait for its initial
@@ -50,7 +60,7 @@ prep( ExoSelf_PId ) ->
 % !!! Consider using ordinary subtraction instead of timer:now_diff().
 % !!! reference: http://erlang.org/doc/apps/erts/time_correction.html (How to Work with the New API)
 %
-% The cortex’s goal is to synchronize the NN system’s sensors and actuators. When the actuators have
+% The cortex's goal is to synchronize the NN system's sensors and actuators. When the actuators have
 % received all their control signals, they forward the sync messages, the Fitness, and the HaltFlag
 % messages to the cortex. The cortex accumulates these Fitness and HaltFlag signals, and if any of
 % the HaltFlag signals have been set to 1, HFAcc will be greater than 0, signifying that the cortex
@@ -74,17 +84,34 @@ loop(
 ) ->
   receive
     { APId, sync, Fitness, EndFlag } ->
-      loop(
-        Id,
-        ExoSelf_PId,
-        SPIds,
-        { APIds, MAPIds },
-        NPIds,
-        CycleAcc,
-        FitnessAcc + Fitness,
-        EFAcc + EndFlag,
-        active
-      );
+      io:format( "FitnessAcc: ~p~n", [ FitnessAcc ] ),
+      case Fitness == goal_reached of
+        true ->
+          put( goal_reached, true ),
+          loop(
+            Id,
+            ExoSelf_PId,
+            SPIds,
+            { APIds, MAPIds },
+            NPIds,
+            CycleAcc,
+            FitnessAcc + Fitness,
+            EFAcc + EndFlag,
+            active
+          );
+        false ->
+          loop(
+            Id,
+            ExoSelf_PId,
+            SPIds,
+            { APIds, MAPIds },
+            NPIds,
+            CycleAcc,
+            FitnessAcc + Fitness,
+            EFAcc + EndFlag,
+            active
+          )
+      end;
     terminate ->
       io:format( "Cortex: ~p is terminating.~n", [ Id ] ),
       [ PId ! { self(), terminate } || PId <- SPIds ],
@@ -93,10 +120,18 @@ loop(
   end;
 loop( Id, ExoSelf_PId, SPIds, { [], MAPIds }, NPIds, CycleAcc, FitnessAcc, EFAcc, active ) ->
   case 0 < EFAcc of
-    true -> % Organism finished evaluation
+    % Organism finished evaluation
+    true ->
       TimeDif = timer:now_diff( erlang:timestamp(), get( start_time ) ),
-      ExoSelf_PId ! { self(), evaluation_completed, FitnessAcc, CycleAcc, TimeDif },
-      loop(
+      ExoSelf_PId ! {
+       	self(),
+       	evaluation_completed,
+       	FitnessAcc,
+       	CycleAcc,
+       	TimeDif,
+       	get( goal_reached )
+      },
+      cortex:loop(
         Id,
         ExoSelf_PId,
         SPIds,
@@ -109,7 +144,7 @@ loop( Id, ExoSelf_PId, SPIds, { [], MAPIds }, NPIds, CycleAcc, FitnessAcc, EFAcc
       );
     false ->
       [ PId ! { self(), sync } || PId <- SPIds  ],
-      loop(
+      cortex:loop(
         Id,
         ExoSelf_PId,
         SPIds,
@@ -128,7 +163,7 @@ loop(
   { MAPIds, MAPIds },
   NPIds,
   _CycleAcc,
-  _FitnessAcc,
+  FitnessAcc,
   _EFAcc,
   inactive
 ) ->
@@ -136,7 +171,8 @@ loop(
     { ExoSelf_PId, reactivate } ->
       put( start_time, erlang:timestamp() ),
       [ SPId ! { self(), sync } || SPId <- SPIds ],
-      loop( Id, ExoSelf_PId, SPIds, { MAPIds, MAPIds }, NPIds, 1, 0, 0, active );
+      io:format( "FitnessAcc: ~p~n", [ FitnessAcc ] ),
+      cortex:loop( Id, ExoSelf_PId, SPIds, { MAPIds, MAPIds }, NPIds, 1, 0, 0, active );
     { ExoSelf_PId, terminate } ->
       io:format( "Cortex: ~p is terminating.~n", [ Id ] ),
       ok
