@@ -12,10 +12,12 @@
   [
     gen/2,
     prep/1,
-    loop/7,
+    loop/8,
     rng/2,
     rng1/2,
-    xor_GetInput/2
+    xor_GetInput/3,
+    pb_GetInput/3,
+    dtm_GetInput/3
   ]
 ).
 -include( "records.hrl" ).
@@ -27,19 +29,19 @@ gen( ExoSelf_PId, Node ) ->
 
 prep( ExoSelf_PId ) ->
   receive
-    { ExoSelf_PId, { Id, Cx_PId, Scape, SensorName, VL, Fanout_PIds } } ->
-      loop( Id, ExoSelf_PId, Cx_PId, Scape, SensorName, VL, Fanout_PIds )
+    { ExoSelf_PId, { Id, Cx_PId, Scape, SensorName, VL, Parameters, Fanout_PIds } } ->
+      loop( Id, ExoSelf_PId, Cx_PId, Scape, SensorName, VL, Parameters, Fanout_PIds )
   end.
 
 % The sensor process accepts only 2 types of messages, both from the cortex. The sensor can either be
 % triggered to begin gathering sensory data based on its sensory role, or terminate if the cortex
 % requests so.
-loop( Id, ExoSelf_PId, Cx_PId, Scape, SensorName, VL, Fanout_PIds ) ->
+loop( Id, ExoSelf_PId, Cx_PId, Scape, SensorName, VL, Parameters, Fanout_PIds ) ->
   receive
     { Cx_PId, sync } ->
-      SensoryVector = sensor:SensorName( VL, Scape ),
+      SensoryVector = sensor:SensorName( VL, Parameters, Scape ),
       [ Pid ! { self(), forward, SensoryVector } || Pid <- Fanout_PIds ],
-      loop( Id, ExoSelf_PId, Cx_PId, Scape, SensorName, VL, Fanout_PIds );
+      loop( Id, ExoSelf_PId, Cx_PId, Scape, SensorName, VL, Parameters, Fanout_PIds );
     { ExoSelf_PId, terminate } ->
       io:format( "Sensor: ~p is terminating.~n", [ Id ] ),
       ok
@@ -60,7 +62,7 @@ rng1( VL, Acc ) ->
 % is indeed of length 2. If the vector length differs, then this is printed to the console and a
 % dummy vector of appropriate length is constructed and used. This prevents unnecessary crashes in
 % the case of errors, and gives the researcher a chance to fix the error and hotswap the code.
-xor_GetInput( VL, Scape ) ->
+xor_GetInput( VL, _Parameters, Scape ) ->
   Scape ! { self(), sense },
   receive
     { Scape, percept, SensoryVector } ->
@@ -69,7 +71,40 @@ xor_GetInput( VL, Scape ) ->
           SensoryVector;
         false ->
           io:format(
-            "Error in sensor:xor_sim/2, VL: ~p  SensoryVector: ~p~n",
+            "Error in sensor:xor_sim/3, VL: ~p  SensoryVector: ~p~n",
+            [ VL, SensoryVector ]
+          ),
+          lists:duplicate( VL, 0 )
+      end
+  end.
+
+pb_GetInput( VL, Parameters, Scape ) ->
+  Scape ! { self(), sense, Parameters },
+  receive
+    { Scape, percept, SensoryVector } ->
+      case VL == length( SensoryVector ) of
+        true ->
+          SensoryVector;
+        false ->
+          io:format(
+            "Error in sensor:pb_GetInput/3, VL: ~p SensoryVector: ~p~n",
+            [ VL, SensoryVector ]
+          ),
+          lists:duplicate( VL, 0 )
+      end
+  end.
+
+dtm_GetInput( VL, Parameters, Scape ) ->
+  Scape ! { self(), sense, Parameters },
+  receive
+    { Scape, percept, SensoryVector } ->
+      io:format( "self(): ~p  SensoryVector: ~p~n", [ self(), SensoryVector ] ),
+      case VL == length( SensoryVector ) of
+        true ->
+          SensoryVector;
+        false ->
+          io:format(
+            "Error in sensor:dtm_GetInput/3, VL: ~p SensoryVector: ~p~n",
             [ VL, SensoryVector ]
           ),
           lists:duplicate( VL, 0 )
