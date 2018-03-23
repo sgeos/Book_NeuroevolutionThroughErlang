@@ -74,7 +74,7 @@
   [
     mutate_weights,
     add_bias,
-    %remove_bias,
+    remove_bias,
     mutate_af,
     add_outlink,
     %remove_outlink,
@@ -161,7 +161,7 @@ mutate( Agent_Id ) ->
     TotMutations = tot_topological_mutations:TTM_Name( Parameter, Agent_Id ),
     OldGeneration = A#agent.generation,
     NewGeneration = OldGeneration + 1,
-    genotype:write( A#agent{ generation=NewGeneration } ),
+    genotype:write( A#agent{ generation = NewGeneration } ),
     apply_Mutators( Agent_Id, TotMutations ),
     genotype:update_fingerprint( Agent_Id )
   end,
@@ -268,7 +268,7 @@ mutate_tuning_selection( Agent_Id ) ->
         rand:uniform( length( Tuning_Selection_Functions ) ),
         Tuning_Selection_Functions
       ),
-      U_A = A#agent{ tuning_selection_f=New_TSF },
+      U_A = A#agent{ tuning_selection_f = New_TSF },
       genotype:write( U_A )
   end.
 
@@ -295,7 +295,7 @@ mutate_tuning_annealing( Agent_Id ) ->
         rand:uniform( length( Tuning_Annealing_Parameters ) ),
         Tuning_Annealing_Parameters
       ),
-      U_A = A#agent{ annealing_parameter=New_TAP },
+      U_A = A#agent{ annealing_parameter = New_TAP },
       genotype:write( U_A )
   end.
 
@@ -322,7 +322,7 @@ mutate_tot_topological_mutations( Agent_Id ) ->
         rand:uniform( length( Topological_Mutations_Functions ) ),
         Topological_Mutations_Functions
       ),
-      U_A = A#agent{ tot_topological_mutations_f=New_TMF },
+      U_A = A#agent{ tot_topological_mutations_f = New_TMF },
       genotype:write( U_A )
   end.
 
@@ -342,10 +342,10 @@ mutate_weights( Agent_Id ) ->
   N = genotype:read( { neuron, N_Id } ),
   Input_IdPs = N#neuron.input_idps,
   U_Input_IdPs = perturb_IdPs( Input_IdPs ),
-  U_N = N#neuron{ input_idps=U_Input_IdPs },
+  U_N = N#neuron{ input_idps = U_Input_IdPs },
   EvoHist = A#agent.evo_hist,
   U_EvoHist = [ { mutate_weights, N_Id } | EvoHist ],
-  U_A = A#agent{ evo_hist=U_EvoHist },
+  U_A = A#agent{ evo_hist = U_EvoHist },
   genotype:write( U_N ),
   genotype:write( U_A ).
 
@@ -412,10 +412,10 @@ add_bias( Agent_Id ) ->
       exit( "--- --- --- Error: add_bias: This Neuron already has a bias part." );
     false ->
       U_Input_IdPs = lists:append( Input_IdPs, [ { bias, [ rand:uniform() - 0.5 ] } ] ),
-      U_N = N#neuron{ input_idps=U_Input_IdPs, generation=Generation },
+      U_N = N#neuron{ input_idps = U_Input_IdPs, generation = Generation },
       EvoHist = A#agent.evo_hist,
       U_EvoHist = [ { add_bias, N_Id } | EvoHist ],
-      U_A = A#agent{ evo_hist=U_EvoHist },
+      U_A = A#agent{ evo_hist = U_EvoHist },
       genotype:write( U_N ),
       genotype:write( U_A )
   end.
@@ -442,10 +442,10 @@ remove_bias( Agent_Id ) ->
       exit( "--- --- --- Error: remove_bias: This Neuron does not have a bias part." );
     true ->
       U_Input_IdPs = lists:keydelete( bias, 1, Input_IdPs ),
-      U_N = N#neuron{ input_idps=U_Input_IdPs, generation=Generation },
+      U_N = N#neuron{ input_idps = U_Input_IdPs, generation = Generation },
       EvoHist = A#agent.evo_hist,
       U_EvoHist = [ { remove_bias, N_Id } | EvoHist ],
-      U_A = A#agent{ evo_hist=U_EvoHist },
+      U_A = A#agent{ evo_hist = U_EvoHist },
       genotype:write( U_N ),
       genotype:write( U_A )
   end.
@@ -467,10 +467,10 @@ mutate_af( Agent_Id ) ->
       exit( "--- --- --- Error: mutate_af: There are no other activation functions to use." );
     Activation_Functions ->
       NewAF = lists:nth( rand:uniform( length( Activation_Functions ) ), Activation_Functions ),
-      U_N = N#neuron{ af=NewAF, generation=Generation },
+      U_N = N#neuron{ af = NewAF, generation = Generation },
       EvoHist = A#agent.evo_hist,
       U_EvoHist = [ { mutate_af, N_Id } | EvoHist ],
-      U_A = A#agent{ evo_hist=U_EvoHist },
+      U_A = A#agent{ evo_hist = U_EvoHist },
       genotype:write( U_N ),
       genotype:write( U_A )
   end.
@@ -492,10 +492,10 @@ mutate_pf( Agent_Id ) ->
       exit( "--- --- --- Error: mutate_pf: There are no other plasticity functions to use." );
     Plasticity_Functions ->
       NewPF = lists:nth( rand:uniform( length( Plasticity_Functions ) ), Plasticity_Functions ),
-      U_N = N#neuron{ pf=NewPF, generation=Generation },
+      U_N = N#neuron{ pf = NewPF, generation = Generation },
       EvoHist = A#agent.evo_hist,
       U_EvoHist = [ { mutate_pf, N_Id } | EvoHist ],
-      U_A = A#agent{ evo_hist=U_EvoHist },
+      U_A = A#agent{ evo_hist = U_EvoHist },
       genotype:write( U_N ),
       genotype:write( U_A )
   end.
@@ -518,10 +518,10 @@ mutate_aggrf( Agent_Id ) ->
       exit( "--- --- --- Error: mutate_pf: There are no other aggregation functions to use." );
     Aggregation_Functions ->
       NewAggrF = lists:nth( rand:uniform( length( Aggregation_Functions ) ), Aggregation_Functions ),
-      U_N = N#neuron{ aggr_f=NewAggrF, generation=Generation },
+      U_N = N#neuron{ aggr_f = NewAggrF, generation = Generation },
       EvoHist = A#agent.evo_hist,
       U_EvoHist = [ { mutate_aggrf, N_Id } | EvoHist ],
-      U_A = A#agent{ evo_hist=U_EvoHist },
+      U_A = A#agent{ evo_hist = U_EvoHist },
       genotype:write( U_N ),
       genotype:write( U_A )
   end.
@@ -841,12 +841,11 @@ add_outlink( Agent_Id ) ->
   Cx_Id = A#agent.cx_id,
   Cx = genotype:read( { cortex, Cx_Id } ),
   N_Ids = Cx#cortex.neuron_ids,
-  A_Ids = Cx#cortex.actuator_ids,
   N_Id = lists:nth( rand:uniform( length( N_Ids ) ), N_Ids ),
   N = genotype:read( { neuron, N_Id } ),
   Output_Ids = N#neuron.output_ids,
   Outlink_NIdPool = filter_OutlinkIdPool( A#agent.constraint, N_Id, N_Ids ),
-  case lists:append( A_Ids, Outlink_NIdPool ) -- Output_Ids of
+  case Outlink_NIdPool -- Output_Ids of
     [] ->
       exit( "--- --- --- Error: add_outlink: Neuron already connected to all ids." );
     Available_Ids ->
@@ -939,7 +938,6 @@ add_neuron( Agent_Id ) -> % Adds neuron and connects it to other neurons, not se
   Cx = genotype:read( { cortex, Cx_Id } ),
   N_Ids = Cx#cortex.neuron_ids,
   S_Ids = Cx#cortex.sensor_ids,
-  A_Ids = Cx#cortex.actuator_ids,
   { TargetLayer, TargetNeuron_Ids } = lists:nth( rand:uniform( length( Pattern ) ), Pattern ),
   NewN_Id = { { TargetLayer, genotype:generate_UniqueId() }, neuron },
   U_N_Ids = [ NewN_Id | N_Ids ],
@@ -954,8 +952,8 @@ add_neuron( Agent_Id ) -> % Adds neuron and connects it to other neurons, not se
   Inlink_NIdPool = filter_InlinkIdPool( A#agent.constraint, NewN_Id, N_Ids ),
   Outlink_NIdPool = filter_OutlinkIdPool( A#agent.constraint, NewN_Id, N_Ids ),
   FromElementId_Pool = Inlink_NIdPool ++ S_Ids,
-  ToElementId_Pool = Outlink_NIdPool ++ A_Ids,
-  case ( Inlink_NIdPool == [] ) or ( Outlink_NIdPool == [] ) of
+  ToElementId_Pool = Outlink_NIdPool,
+  case ( FromElementId_Pool == [] ) or ( Outlink_NIdPool == [] ) of
     true ->
       exit(
         "--- --- --- Error: add_neuron: Cannot add new neuron. "
@@ -1001,25 +999,17 @@ outsplice( Agent_Id ) ->
   N_Id = lists:nth( rand:uniform( length( N_Ids ) ), N_Ids ),
   N = genotype:read( { neuron, N_Id } ),
   { { LayerIndex, _UId }, neuron } = N_Id,
-  % Compose a feedforward Id pool, to create the splice from.
-  O_IdPool = case
-    [
-      { { TargetLayerIndex, TargetUId }, TargetType }
-        || { { TargetLayerIndex, TargetUId }, TargetType }
-        <- N#neuron.output_ids, LayerIndex < TargetLayerIndex
-    ]
-  of
-    [] ->
-      exit( "--- --- --- Error: outsplice: NeuroLink_OutputSplice O_IdPool == []." );
-    Ids ->
-      Ids
-  end,
   % Choose a random neuron in the output_ids for splicing.
-  O_Id = lists:nth( rand:uniform( length( O_IdPool ) ), O_IdPool ),
+  O_Id = lists:nth( rand:uniform( length( N#neuron.output_ids ) ), N#neuron.output_ids ),
   { { OutputLayerIndex, _Output_UId }, _OutputType } = O_Id,
   % Create a new Layer, or select an existing one between N_Id and the O_Id, and create the new
   % unlinked neuron.
-  NewLI = get_NewLI( LayerIndex, OutputLayerIndex, next, Pattern ),
+  NewLI = case LayerIndex =< OutputLayerIndex of
+    true ->
+      get_NewLI( LayerIndex, OutputLayerIndex, next, Pattern );
+    false ->
+      get_NewLI( LayerIndex, OutputLayerIndex, prev, Pattern )
+  end,
   NewN_Id = { { NewLI, genotype:generate_UniqueId() }, neuron },
   SpecCon = A#agent.constraint,
   genotype:construct_Neuron( Cx_Id, Generation, SpecCon, NewN_Id, [], [] ),
@@ -1050,7 +1040,7 @@ outsplice( Agent_Id ) ->
 % creates a new layer between the N_Id and one of the ids in its input_idps list. If the FromLI ==
 % ToLI, the function exits with an error.
 get_NewLI( LI, LI, _Direction, _Pattern ) ->
-  exit( "--- --- --- Error: get_NewLI: FromLI == ToLI." );
+  LI;
 get_NewLI( FromLI, ToLI, Direction, Pattern ) ->
   NewLI = case Direction of
     next ->

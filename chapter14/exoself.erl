@@ -44,7 +44,7 @@
     nids = [],
     apids = [],
     scape_pids = [],
-    highest_fitness = 0,
+    highest_fitness = -1,
     eval_acc = 0,
     cycle_acc = 0,
     time_acc = 0,
@@ -152,7 +152,11 @@ prep( Agent_Id, PM_PId ) ->
 % the Spread value. The exoself then reactivates the cortex, and drops back into its main loop.
 loop( S ) ->
   receive
-    { Cx_PId, evaluation_completed, Fitness, Cycles, Time } ->
+    { Cx_PId, evaluation_completed, Fitness, Cycles, Time, GoalReachedFlag } ->
+      io:format(
+        "E Msg: ~p~n  E S: ~p~n",
+        [ { Cx_PId, evaluation_completed, Fitness, Cycles, Time, GoalReachedFlag }, S ]
+      ),
       IdsNPIds = S#state.idsNpids,
       { U_HighestFitness, U_Attempt } = case S#state.highest_fitness < Fitness of
         true ->
@@ -174,7 +178,7 @@ loop( S ) ->
       U_TimeAcc = S#state.time_acc + Time,
       U_EvalAcc = S#state.eval_acc + 1,
       gen_server:cast( S#state.pm_pid, { self(), evaluations, S#state.specie_id, 1, Cycles, Time } ),
-      case S#state.max_attempts =< U_Attempt of
+      case ( S#state.max_attempts =< U_Attempt ) or ( true == GoalReachedFlag ) of
         true -> % end training
           A = genotype:dirty_read( { agent, S#state.agent_id } ),
           genotype:write( A#agent{ fitness=U_HighestFitness } ),
@@ -194,6 +198,12 @@ loop( S ) ->
             "  TimeAcc: ~p~n",
             [ self(), U_HighestFitness, U_EvalAcc, U_CycleAcc, U_TimeAcc ]
           ),
+          case GoalReachedFlag of
+            true ->
+              gen_server:cast( S#state.pm_pid, { S#state.agent_id, goal_reached } );
+            _ ->
+              ok
+          end,
           gen_server:cast(
             S#state.pm_pid,
             { S#state.agent_id, terminated, U_HighestFitness }
@@ -223,10 +233,10 @@ loop( S ) ->
             attempt = U_Attempt,
             highest_fitness = U_HighestFitness
           },
-          loop( U_S )
+          exoself:loop( U_S )
       end
-    after 10000 ->
-      io:format( "exoself: ~p stuck.~n", [ S#state.agent_id ] )
+    %after 10000 ->
+    %  io:format( "exoself: ~p stuck.~n", [ S#state.agent_id ] )
   end.
 
 % We spawn the process for each element based on its type: CerebralUnitType, and the gen function
@@ -249,7 +259,9 @@ spawn_Scapes( IdsNPIds, Sensor_Ids, Actuator_Ids ) ->
     ( genotype:dirty_read( { actuator, Id } ) )#actuator.scape
     || Id <- Actuator_Ids
   ],
+  io:format( "Sensor_Scapes: ~p~n  Actuator_Scapes: ~p~n", [ Sensor_Scapes, Actuator_Scapes ] ),
   Unique_Scapes = Sensor_Scapes ++ ( Actuator_Scapes -- Sensor_Scapes ),
+  io:format( "Unique_Scapes: ~p~n", [ Unique_Scapes ] ),
   SN_Tuples = [
     { scape:gen( self(), node() ), ScapeName }
     || { private, ScapeName } <- Unique_Scapes
@@ -273,7 +285,7 @@ link_Sensors( [ SId | Sensor_Ids ], IdsNPIds ) ->
     { private, ScapeName } ->
       ets:lookup_element( IdsNPIds, ScapeName, 2 )
   end,
-  SPId ! { self(), { SId, Cx_PId, Scape, SName, S#sensor.vl, Fanout_PIds } },
+  SPId ! { self(), { SId, Cx_PId, Scape, SName, S#sensor.vl, S#sensor.parameters, Fanout_PIds } },
   link_Sensors( Sensor_Ids, IdsNPIds );
 link_Sensors( [], _IdsNPIds ) ->
   ok.
@@ -292,7 +304,7 @@ link_Actuators( [ AId | Actuator_Ids ], IdsNPIds ) ->
     { private, ScapeName } ->
       ets:lookup_element( IdsNPIds, ScapeName, 2 )
   end,
-  APId ! { self(), { AId, Cx_PId, Scape, AName, Fanin_PIds } },
+  APId ! { self(), { AId, Cx_PId, Scape, AName, A#actuator.parameters, Fanin_PIds } },
   link_Actuators( Actuator_Ids, IdsNPIds );
 link_Actuators( [], _IdsNPIds ) ->
   ok.
@@ -386,7 +398,7 @@ convert_PIdPs2IdPs( IdsNPIds, [ { PId, Weights } | Input_PIdPs ], Acc ) ->
     [ { ets:lookup_element( IdsNPIds, PId, 2 ), Weights } | Acc ]
   );
 convert_PIdPs2IdPs( _IdsNPIds, [ Bias ], Acc ) ->
-  lists:reverse( [ { bias, Bias } | Acc ] );
+  lists:reverse( [ { bias, [ Bias ] } | Acc ] );
 convert_PIdPs2IdPs( _IdsNPIds, [], Acc ) ->
   lists:reverse( Acc ).
 

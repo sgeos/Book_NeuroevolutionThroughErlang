@@ -725,7 +725,7 @@ test() ->
 create_test() ->
   Specie_Id = test,
   Agent_Id = test,
-  SpecCon = #constraint{},
+  SpecCon = #constraint{ morphology = discrete_tmaze },
   F = fun() ->
     case genotype:read( { agent, test } ) of
       undefined ->

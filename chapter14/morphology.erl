@@ -19,6 +19,9 @@
     get_Actuators/1,
     xor_mimic/1,
     pole_balancing/1,
+    pole_balancing_single/1,
+    pole_balancing_double/1,
+    pole_balancing_double_damping/1,
     discrete_tmaze/1,
     generate_id/0
   ]
@@ -73,6 +76,30 @@ xor_mimic( actuators ) ->
 % fitness score of the interfacing agent, and using that angular position for the purpose of
 % calculating whether termination condition has been reached by the problem.
 pole_balancing( sensors ) ->
+  pole_balancing_single( sensors );
+pole_balancing( actuators ) ->
+  pole_balancing_single( actuators ).
+
+pole_balancing_single( sensors ) ->
+  [
+    #sensor{
+      name = pb_GetInput,
+      scape = { private, pb_sim },
+      vl = 2,
+      parameters = [ 2 ]
+    }
+  ];
+pole_balancing_single( actuators ) ->
+  [
+    #actuator{
+      name = pb_SendOutput,
+      scape = { private, pb_sim },
+      vl = 1,
+      parameters = [ without_damping, 0 ]
+    }
+  ].
+
+pole_balancing_double( sensors ) ->
   [
     #sensor{
       name = pb_GetInput,
@@ -81,7 +108,26 @@ pole_balancing( sensors ) ->
       parameters = [ 3 ]
     }
   ];
-pole_balancing( actuators ) ->
+pole_balancing_double( actuators ) ->
+  [
+    #actuator{
+      name = pb_SendOutput,
+      scape = { private, pb_sim },
+      vl = 1,
+      parameters = [ without_damping, 1 ]
+    }
+  ].
+
+pole_balancing_double_damping( sensors ) ->
+  [
+    #sensor{
+      name = pb_GetInput,
+      scape = { private, pb_sim },
+      vl = 3,
+      parameters = [ 3 ]
+    }
+  ];
+pole_balancing_double_damping( actuators ) ->
   [
     #actuator{
       name = pb_SendOutput,
@@ -91,7 +137,7 @@ pole_balancing( actuators ) ->
     }
   ].
 
-discrete_tmaze(sensors)->
+discrete_tmaze( sensors ) ->
   [
     #sensor{
       name = dtm_GetInput,
@@ -100,7 +146,7 @@ discrete_tmaze(sensors)->
       parameters = [ all ]
     }
   ];
-discrete_tmaze(actuators)->
+discrete_tmaze( actuators ) ->
   [
     #actuator{
       name = dtm_SendOutput,

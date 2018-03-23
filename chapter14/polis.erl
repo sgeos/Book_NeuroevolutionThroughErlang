@@ -101,7 +101,6 @@ init( { Mods, PublicScapes } ) ->
   Active_PublicScapes = start_scapes( PublicScapes, [] ),
   io:format( "--- --- --- Polis: ##MATHEMA## is now online --- --- ---~n" ),
   InitState = #state{ active_mods = Mods, active_scapes = Active_PublicScapes },
-  % Scape_PIdsP = [ { ScapePId, Scape_Type } ... ]
   { ok, InitState }.
 
 % At this point polis only accepts a get_scape call, to which it replies with the Pid or undefined

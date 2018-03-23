@@ -1,8 +1,112 @@
 cat erl.txt
 erl
-Copy the following into the erlang prompt.
+Copy the following relevant commands into the erlang prompt.
 
-% rebuild and reload all modules, then generate database
+% benchmark: single pole, partial information, standard fitness function (no damping)
+% update benchmarker.erl and run benchmarks
+
+% MODIFY benchmarker.erl
+-define(
+  INIT_CONSTRAINTS,
+  [
+    #constraint{
+      morphology = Morphology,
+      connection_architecture = CA,
+      population_evo_alg_f = generational
+    }
+    || Morphology <- [ pole_balancing_single ], CA <- [ recurrent ] ] % <= MODIFY
+).
+  PMP = #pmp{
+    op_mode = gt,
+    population_id = test,
+    survival_percentage = 0.5,
+    specie_size_limit = 10,
+    init_specie_size = 10,
+    polis_id = mathema,
+    generation_limit = inf,
+    evaluations_limit = 5000,
+    fitness_goal = 90000 % <= MODIFY
+  },
+  E=#experiment{
+    id = Id,
+    backup_flag = true,
+    pm_parameters = PMP,
+    init_constraints = ?INIT_CONSTRAINTS,
+    progress_flag = in_progress,
+    run_index = 1,
+    tot_runs = 50, % <= MODIFY
+    started = { date(), time() },
+    interruptions = []
+  },
+
+% rebuild and reload all modules, then generate database and run benchmarks
 polis:sync(). % OR make:all( [ load ] ).
 polis:reset(). % OR polis:create().
+benchmarker:start( spb_without_damping ).
+
+% benchmark: double pole, partial information, standard fitness function (no damping)
+% update benchmarker.erl and run benchmarks
+
+% MODIFY benchmarker.erl
+-define(
+  INIT_CONSTRAINTS,
+    % ...
+    || Morphology <- [ pole_balancing_double ], CA <- [ recurrent ] ] % <= MODIFY
+).
+  PMP = #pmp{
+    % ...
+    fitness_goal = 90000 % <= MODIFY (same as previous)
+  },
+  E=#experiment{
+    % ...
+    tot_runs = 50, % <= MODIFY (same as previous)
+    % ...
+  },
+
+% rebuild and reload all modules, then generate database and run benchmarks
+polis:sync(). % OR make:all( [ load ] ).
+polis:reset(). % OR polis:create().
+benchmarker:start( dpb_without_damping ).
+
+% benchmark: double pole, partial information, with damping fitness function
+% update benchmarker.erl and run benchmarks
+
+% MODIFY benchmarker.erl
+-define(
+  INIT_CONSTRAINTS,
+    % ...
+    || Morphology <- [ pole_balancing_double_damping ], CA <- [ recurrent ] ] % <= MODIFY
+).
+  PMP = #pmp{
+    % ...
+    fitness_goal = inf % <= MODIFY
+  },
+  E=#experiment{
+    % ...
+    tot_runs = 50, % <= MODIFY (same as previous)
+    % ...
+  },
+
+% rebuild and reload all modules, then generate database and run benchmarks
+polis:sync(). % OR make:all( [ load ] ).
+polis:reset(). % OR polis:create().
+benchmarker:start( dpb_with_damping ).
+
+% -------------
+
+% MODIFY benchmarker.erl
+-define(
+  INIT_CONSTRAINTS,
+    % ...
+    || Morphology <- [ discrete_tmaze ], CA <- [ recurrent ] ] % <= MODIFY
+).
+  PMP = #pmp{
+    % ...
+    fitness_goal = inf % <= MODIFY (same as previous)
+  },
+  E=#experiment{
+    % ...
+    tot_runs = 20, % <= MODIFY
+    % ...
+  },
 

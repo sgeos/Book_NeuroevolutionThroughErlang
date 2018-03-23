@@ -57,7 +57,7 @@
       population_evo_alg_f = generational
       %population_evo_alg_f = steady_state
     }
-    || Morphology <- [ xor_mimic ], CA <- [ feedforward ]
+    || Morphology <- [ discrete_tmaze ], CA <- [ recurrent ]
   ]
 ).
 -record(
@@ -87,9 +87,10 @@
     init_specie_size = 10,
     polis_id = mathema,
     generation_limit = 100,
-    evaluations_limit = 100000,
+    evaluations_limit = 10000,
     fitness_goal = inf,
-    benchmarker_pid
+    benchmarker_pid,
+    goal_reached=false
   }
 ).
 
@@ -241,13 +242,14 @@ handle_cast(
             1,
             lists:reverse( lists:sort( [ MaxFitness || { _, _, MaxFitness, _ } <- SpecFitList ] ) )
           ),
-    Generation_Limit = S#state.generation_limit,
-    Evaluation_Limit = S#state.evaluations_limit,
-    Fitness_Goal = S#state.fitness_goal,
+          Generation_Limit = S#state.generation_limit,
+          Evaluation_Limit = S#state.evaluations_limit,
+          Fitness_Goal = S#state.fitness_goal,
           case
             ( Generation_Limit =< U_PopGen )
               or ( Evaluation_Limit =< S#state.tot_evaluations )
-              or ( Fitness_Goal < BestFitness )
+              or ( Fitness_Goal =< BestFitness )
+              or S#state.goal_reached
           of
             % ending condition
             true ->
@@ -313,7 +315,11 @@ handle_cast(
     false ->
       S#state.best_fitness
   end,
-  case ( Evaluation_Limit =< S#state.tot_evaluations ) or ( Fitness_Goal < NewBestFitness ) of
+  case
+    ( Evaluation_Limit =< S#state.tot_evaluations )
+    or ( Fitness_Goal =< NewBestFitness )
+    or S#state.goal_reached
+  of
     true ->
       case lists:keydelete( Agent_Id, 1, S#state.activeAgent_IdPs ) of
         [] ->
@@ -415,7 +421,13 @@ handle_cast( { op_tag, continue }, S ) when S#state.op_tag == pause ->
   },
   { noreply, U_S };
 
-handle_cast( { _From, evaluations, Specie_Id, AgentEvalAcc, AgentCycleAcc, AgentTimeAcc }, S ) ->
+handle_cast( { _From, evaluations, Specie_Id, AEA, AgentCycleAcc, AgentTimeAcc }, S ) ->
+  AgentEvalAcc = case S#state.goal_reached of
+    true ->
+      0;
+    false ->
+      AEA
+  end,
   Eval_Acc = S#state.eval_acc,
   U_EvalAcc = S#state.eval_acc + AgentEvalAcc,
   U_CycleAcc = S#state.cycle_acc + AgentCycleAcc,
@@ -453,6 +465,10 @@ handle_cast( { _From, evaluations, Specie_Id, AgentEvalAcc, AgentCycleAcc, Agent
   end,
   { noreply, U_S };
 
+handle_cast( { _From, goal_reached }, S ) ->
+  U_S = S#state{ goal_reached = true },
+  { noreply, U_S };
+
 handle_cast( { _From, print_TRACE }, S ) ->
   Population_Id = S#state.population_id,
   P = genotype:dirty_read( { population, Population_Id } ),
@@ -488,15 +504,24 @@ terminate( Reason, S ) ->
       );
     _ ->
       OpMode = S#state.op_mode,
+      OpTag = S#state.op_tag,
+      TotEvaluations = S#state.tot_evaluations,
       Population_Id = S#state.population_id,
+      case TotEvaluations < 500 of
+        % So that there is at least one stat in the stats list.
+        true ->
+          gather_STATS( Population_Id, 0 );
+        false ->
+          ok
+      end,
       P = genotype:dirty_read( { population, Population_Id } ),
       T = P#population.trace,
-      % !!! Why is TotEvaluations bound?  Underscore added.
-      _TotEvaluations = T#trace.tot_evaluations,
-      OpTag = S#state.op_tag,
+      U_T = T#trace{ tot_evaluations = TotEvaluations },
+      U_P = P#population{ trace = U_T },
+      genotype:write( U_P ),
 
       io:format( "--- --- --- Trace Start --- --- ---~n" ),
-      io:format( "~p~n", [ T ] ),
+      io:format( "~p~n", [ U_T ] ),
       io:format( "--- --- --- Trace End --- --- ---~n" ),
 
       io:format(
@@ -516,7 +541,7 @@ terminate( Reason, S ) ->
         undefined ->
           ok;
         PId ->
-          PId ! { S#state.population_id, completed, T }
+          PId ! { S#state.population_id, completed, U_T }
       end
   end.
 

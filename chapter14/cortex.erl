@@ -31,11 +31,12 @@
 %  }
 %).
 
-% The gen/2 function spawns the cortex element, which immediately starts to wait for its initial
-% state message from the same process that spawned it, exoself. The initial state message contains
-% the sensor, actuator, and neuron PId lists. Before dropping into the main loop, CycleAcc,
-% FitnessAcc, and HFAcc (HaltFlag Acc), are all set to 0, and the status of the cortex is set to
-% active, prompting it to begin the synchronization process and call the sensors to action.
+% The gen/2 function spawns the cortex element, which immediately starts to wait for a the state
+% message from the same process that spawned it, exoself. The initial state message contains the
+% sensor, actuator, and neuron PId lists. The message also specifies how many total Sense-Think-Act
+% cycles the Cortex should execute before terminating the NN system. Once we implement the learning
+% algorithm, the termination criteria will depend on the fitness of the NN, or some other useful
+% property.
 gen( ExoSelf_PId, Node ) ->
   spawn( Node, ?MODULE, prep, [ ExoSelf_PId ] ).
 
@@ -82,10 +83,10 @@ loop(
   EFAcc,
   active
 ) ->
-  receive
+  receive 
     { APId, sync, Fitness, EndFlag } ->
-      io:format( "FitnessAcc: ~p~n", [ FitnessAcc ] ),
-      case Fitness == goal_reached of
+      %io:format( "FitnessAcc: ~p~n", [ FitnessAcc ] ),
+      case goal_reached == Fitness of
         true ->
           put( goal_reached, true ),
           loop(
@@ -95,7 +96,7 @@ loop(
             { APIds, MAPIds },
             NPIds,
             CycleAcc,
-            FitnessAcc + Fitness,
+            FitnessAcc, % !!! there was a bug here in the chapter 14 official repository
             EFAcc + EndFlag,
             active
           );
@@ -113,10 +114,10 @@ loop(
           )
       end;
     terminate ->
-      io:format( "Cortex: ~p is terminating.~n", [ Id ] ),
+      io:format("Cortex:~p is terminating.~n",[Id]),
       [ PId ! { self(), terminate } || PId <- SPIds ],
       [ PId ! { self(), terminate } || PId <- MAPIds ],
-      [ PId ! { self(), terminate } || PId <- NPIds ]
+      [ PId ! { self(), termiante } || PId <- NPIds ]
   end;
 loop( Id, ExoSelf_PId, SPIds, { [], MAPIds }, NPIds, CycleAcc, FitnessAcc, EFAcc, active ) ->
   case 0 < EFAcc of
@@ -163,7 +164,7 @@ loop(
   { MAPIds, MAPIds },
   NPIds,
   _CycleAcc,
-  FitnessAcc,
+  _FitnessAcc,
   _EFAcc,
   inactive
 ) ->
@@ -171,10 +172,10 @@ loop(
     { ExoSelf_PId, reactivate } ->
       put( start_time, erlang:timestamp() ),
       [ SPId ! { self(), sync } || SPId <- SPIds ],
-      io:format( "FitnessAcc: ~p~n", [ FitnessAcc ] ),
+      %io:format( "FitnessAcc: ~p~n", [ FitnessAcc ] ),
       cortex:loop( Id, ExoSelf_PId, SPIds, { MAPIds, MAPIds }, NPIds, 1, 0, 0, active );
     { ExoSelf_PId, terminate } ->
-      io:format( "Cortex: ~p is terminating.~n", [ Id ] ),
+      %io:format( "Cortex: ~p is terminating.~n", [ Id ] ),
       ok
   end.
 

@@ -43,7 +43,7 @@
       connection_architecture = CA,
       population_evo_alg_f = generational
     }
-    || Morphology <- [ xor_mimic ], CA <- [ feedforward ] ]
+    || Morphology <- [ pole_balancing_single ], CA <- [ recurrent ] ]
 ).
 
 % Starts and ends Neural Networks with various preset parameters and options, and polls the logger
@@ -56,9 +56,9 @@ start( Id ) ->
     specie_size_limit = 10,
     init_specie_size = 10,
     polis_id = mathema,
-    generation_limit = 100,
+    generation_limit = inf,
     evaluations_limit = 10000,
-    fitness_goal = inf
+    fitness_goal = 90000
   },
   E=#experiment{
     id = Id,
@@ -67,7 +67,7 @@ start( Id ) ->
     init_constraints = ?INIT_CONSTRAINTS,
     progress_flag = in_progress,
     run_index = 1,
-    tot_runs = 10,
+    tot_runs = 50,
     started = { date(), time() },
     interruptions = []
   },
@@ -106,7 +106,7 @@ loop( E, P_Id ) ->
     { P_Id, completed, Trace } ->
       U_TraceAcc = [ Trace | E#experiment.trace_acc ],
       U_RunIndex = E#experiment.run_index + 1,
-      case E#experiment.tot_runs =< U_RunIndex of
+      case E#experiment.tot_runs < U_RunIndex of
         true ->
           U_E = E#experiment{
             trace_acc = U_TraceAcc,
@@ -144,7 +144,12 @@ report( Experiment_Id, FileName ) ->
   file:close( File ),
   io:format( "--- --- --- Traces_Acc written to file: ~p~n", [ ?DIR ++ FileName ++ "_Trace_Acc" ] ),
   Graphs = prepare_Graphs( Traces ),
-  write_Graphs( Graphs, FileName ++ "_Graphs" ).  
+  write_Graphs( Graphs, FileName ++ "_Graphs" ),
+  Eval_List = [ T#trace.tot_evaluations || T<-Traces ],
+  io:format(
+    "Tot Evaluations Avg: ~p  Std: ~p~n",
+    [ functions:avg( Eval_List ), functions:std( Eval_List ) ]
+  ).
 
 -record(
   graph,
@@ -176,6 +181,22 @@ report( Experiment_Id, FileName ) ->
     evaluations = []
   }
 ).
+% -record(
+%   stat,
+%   {
+%     avg_subcores,
+%     subcores_std,
+%     avg_neurons,
+%     neurons_std,
+%     avg_fitness,
+%     fitness_std,
+%     max_fitness,
+%     min_fitness,
+%     avg_diversity,
+%     evaluations,
+%     time_stamp
+%   }
+% ).
 
 prepare_Graphs( Traces ) ->
   [ T | _ ] = Traces,
@@ -253,8 +274,8 @@ avg_stats( [], Avg ) ->
     neurons_std = functions:std( Avg#avg.avg_neurons ),
     avg_fitness = functions:avg( Avg#avg.avg_fitness ),
     fitness_std = functions:std( Avg#avg.avg_fitness ),
-    max_fitness = functions:avg( Avg#avg.max_fitness ),
-    min_fitness = functions:avg( Avg#avg.min_fitness ),
+    max_fitness = lists:max( Avg#avg.max_fitness ),
+    min_fitness = lists:min( Avg#avg.min_fitness ),
     evaluations = functions:avg( Avg#avg.evaluations ),
     avg_diversity = functions:avg( Avg#avg.avg_diversity ),
     diversity_std = functions:std( Avg#avg.avg_diversity )

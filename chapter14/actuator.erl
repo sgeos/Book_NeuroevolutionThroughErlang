@@ -33,7 +33,7 @@ prep( ExoSelf_PId ) ->
         Id,
         ExoSelf_PId,
         Cx_PId,
-         Scape,
+        Scape,
         ActuatorName,
         Parameters,
         { Fanin_PIds, Fanin_PIds },

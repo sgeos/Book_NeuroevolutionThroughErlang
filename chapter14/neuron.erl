@@ -204,7 +204,7 @@ loop(
 ) ->
   Ordered_IAcc = lists:reverse( IAcc ),
   Aggregation_Product = signal_aggregator:AggrF( Ordered_IAcc, Input_PIdPs ),
-  Output = functions:AF( Aggregation_Product ),
+  Output = sat( functions:AF( Aggregation_Product ), -1, 1 ),
   U_IPIdPs = plasticity:PF( Ordered_IAcc, Input_PIdPs, Output ),
   [ Output_PId ! { self(), forward, [ Output ] } || Output_PId <- Output_PIds ],
   loop(

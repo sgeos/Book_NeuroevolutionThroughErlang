@@ -17,7 +17,7 @@
     fanout_ids=[],
     generation,
     format,
-    parameters,
+    parameters=[],
     phys_rep,
     vis_rep,
     pre_f,
@@ -35,7 +35,7 @@
     fanin_ids=[],
     generation,
     format,
-    parameters,
+    parameters=[],
     phys_rep,
     vis_rep,
     pre_f,
@@ -178,14 +178,14 @@
       %diff
     ],
     tuning_selection_fs = [
-      all
+      dynamic_random
+      %all,
       %all_random,
-      %recent,
-      %recent_random,
-      %lastgen,
-      %lastgen_random
+      %dynamic,
+      %dynamic_random
     ],
-    tuning_duration_f = { const, 20 }, % [{nsize_proportional, 0.5}, {nweight_proportional, 0.5} ...]
+    tuning_duration_f = { const, 10 },
+    % [ { const, 20 }, {nsize_proportional, 0.5}, {nweight_proportional, 0.5} ... ]
     annealing_parameters = [ 1 ], % [ 1, 0.9 ]
     perturbation_ranges = [ 1 ], % [ 0.5, 1, 2, 3 ... ]
     agent_encoding_types = [
