@@ -76,9 +76,9 @@ xor_mimic( actuators ) ->
 % fitness score of the interfacing agent, and using that angular position for the purpose of
 % calculating whether termination condition has been reached by the problem.
 pole_balancing( sensors ) ->
-  pole_balancing_single( sensors );
+  pole_balancing_double_damping( sensors );
 pole_balancing( actuators ) ->
-  pole_balancing_single( actuators ).
+  pole_balancing_double_damping( actuators ).
 
 pole_balancing_single( sensors ) ->
   [

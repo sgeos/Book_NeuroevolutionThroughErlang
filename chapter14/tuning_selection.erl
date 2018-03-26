@@ -48,7 +48,7 @@ dynamic( N_Ids, AgentGeneration, PerturbationRange, AnnealingParameter ) ->
     ExtractedN_IdPs ->
       ExtractedN_IdPs
   end,
-  io:format( "ChosenN_IdPs: ~p~n", [ ChosenN_IdPs ] ),
+  %io:format( "ChosenN_IdPs: ~p~n", [ ChosenN_IdPs ] ),
   ChosenN_IdPs.
 
 % The extract_CurGenNIdPs/6 composes a neuron id pool from neurons who are younger than the AgeLimit

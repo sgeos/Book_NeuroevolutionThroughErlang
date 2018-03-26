@@ -124,7 +124,7 @@ pb_sim( ExoSelf_PId ) ->
 pb_sim( ExoSelf_PId, S ) ->
   receive
     { From_PId, sense, [ Parameter ] } ->
-      io:format( "Sense request received: ~p~n", [ From_PId ] ),
+      %io:format( "Sense request received: ~p~n", [ From_PId ] ),
       SenseSignal = case Parameter of
         cpos ->
           [ S#pb_state.cpos ];

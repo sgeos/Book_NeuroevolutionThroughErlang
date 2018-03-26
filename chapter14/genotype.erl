@@ -274,13 +274,22 @@ generate_ids( Index, Acc ) ->
   Id = generate_UniqueId(),
   generate_ids( Index - 1, [ Id | Acc ] ).
 
-% !!! Consider using something like erlang:unique_integer([monotonic]) instead of erlang:timestamp().
+% !!! Consider using something like erlang:unique_integer([monotonic]) instead of erlang:now().
+% !!! Alternatively, a variation on the following may be good:
+% !!!   Time = erlang:monotonic_time(),
+% !!!   UMI = erlang:unique_integer( [ monotonic ] ),
+% !!!   UniqueId = { Time, UMI }
 % !!! reference: http://erlang.org/doc/apps/erts/time_correction.html (How to Work with the New API)
 %
 % The generate_UniqueId/0 creates a unique Id using current time, the Id is a floating point value.
 % The generate_ids/2 function creates a list of unique Ids.
 generate_UniqueId() ->
-  { MegaSeconds, Seconds, MicroSeconds } = erlang:timestamp(),
+  % Must use erlang:now() instead of erlang:timestamp() because erlang:now() is monotonic.
+  % Identifiers require unique values!
+  % Reference:
+  %   http://erlang.org/pipermail/erlang-questions/2013-April/073153.html
+  { MegaSeconds, Seconds, MicroSeconds } = erlang:now(),
+  %{ MegaSeconds, Seconds, MicroSeconds } = erlang:timestamp(),
   1 / ( MegaSeconds * 1000000 + Seconds + MicroSeconds / 1000000 ).
 
 % The random_element/1 function accepts a list as input, and returns a single, randomly chosen
@@ -297,11 +306,6 @@ random_element( List ) ->
 update_fingerprint( Agent_Id ) ->
   A = read( { agent, Agent_Id } ),
   Cx = read( { cortex, A#agent.cx_id } ),
-  GeneralizedPattern = [
-    { LayerIndex, length( LNIds ) }
-      || { LayerIndex, LNIds } <- A#agent.pattern
-  ],
-  GeneralizedEvoHist = generalize_EvoHist( A#agent.evo_hist, [] ),
   GeneralizedSensors = [
     ( read( { sensor, S_Id } ) )#sensor{ id=undefined, cx_id=undefined, fanout_ids=[] }
       || S_Id <- Cx#cortex.sensor_ids
@@ -310,9 +314,16 @@ update_fingerprint( Agent_Id ) ->
     ( read( { actuator, A_Id } ) )#actuator{ id=undefined, cx_id=undefined, fanin_ids=[] }
       || A_Id <- Cx#cortex.actuator_ids
   ],
+  GeneralizedPattern = [
+    { LayerIndex, length( LNIds ) }
+      || { LayerIndex, LNIds } <- A#agent.pattern
+  ],
+  GeneralizedEvoHist = generalize_EvoHist( A#agent.evo_hist, [] ),
   N_Ids = Cx#cortex.neuron_ids,
   { Tot_Neuron_ILs, Tot_Neuron_OLs, Tot_Neuron_ROs, AF_Distribution } = get_NodeSummary( N_Ids ),
   Type = A#agent.encoding_type,
+
+
   TopologySummary = #topology_summary{
     type = Type,
     tot_neurons = length( N_Ids ),
@@ -485,8 +496,8 @@ delete_Agent( Agent_Id, safe ) ->
     write( S#specie{ agent_ids=lists:delete( Agent_Id, Agent_Ids ) } ),
     delete_Agent( Agent_Id )
   end,
-  Result = mnesia:transaction( F ),
-  io:format( "delete_Agent( Agent_Id, safe ): ~p  Result: ~p~n", [ Agent_Id, Result ] ),
+  _Result = mnesia:transaction( F ),
+  %io:format( "delete_Agent( Agent_Id, safe ): ~p  Result: ~p~n", [ Agent_Id, Result ] ),
   ok.
 
 % clone_Agent/2 accepts Agent_Id, and CloneAgent_Id, and then clones the agent, giving the clone

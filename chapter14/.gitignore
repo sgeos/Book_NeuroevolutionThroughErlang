@@ -8,4 +8,5 @@ experimental
 
 # benchmarker directory
 benchmarks
+benchmarks/*
 

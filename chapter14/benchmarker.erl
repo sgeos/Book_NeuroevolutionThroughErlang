@@ -43,7 +43,7 @@
       connection_architecture = CA,
       population_evo_alg_f = generational
     }
-    || Morphology <- [ pole_balancing_single ], CA <- [ recurrent ] ]
+    || Morphology <- [ discrete_tmaze ], CA <- [ recurrent ] ]
 ).
 
 % Starts and ends Neural Networks with various preset parameters and options, and polls the logger
@@ -57,8 +57,8 @@ start( Id ) ->
     init_specie_size = 10,
     polis_id = mathema,
     generation_limit = inf,
-    evaluations_limit = 10000,
-    fitness_goal = 90000
+    evaluations_limit = 5000,
+    fitness_goal = inf
   },
   E=#experiment{
     id = Id,
@@ -67,7 +67,7 @@ start( Id ) ->
     init_constraints = ?INIT_CONSTRAINTS,
     progress_flag = in_progress,
     run_index = 1,
-    tot_runs = 50,
+    tot_runs = 20,
     started = { date(), time() },
     interruptions = []
   },

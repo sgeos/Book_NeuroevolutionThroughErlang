@@ -104,7 +104,7 @@ dtm_SendOutput( Output, Parameters, Scape ) ->
   Scape ! { self(), move, Parameters, Output },
   receive
     { Scape, Fitness, HaltFlag } ->
-      io:format( "self(): ~p  Fitness: ~p  HaltFlag: ~p~n", [ self(), Fitness, HaltFlag ] ),
+      %io:format( "self(): ~p  Fitness: ~p  HaltFlag: ~p~n", [ self(), Fitness, HaltFlag ] ),
       { Fitness, HaltFlag }
   end.
 
