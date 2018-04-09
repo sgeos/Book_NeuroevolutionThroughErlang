@@ -291,7 +291,10 @@ generate_UniqueId() ->
   %{ MegaSeconds, Seconds, MicroSeconds } = erlang:now(), % depreciated
   %{ MegaSeconds, Seconds, MicroSeconds } = erlang:timestamp(), % broken
   %1 / ( MegaSeconds * 1000000 + Seconds + MicroSeconds / 1000000 ).
-  1.0 / erlang:unique_integer( [ positive, monotonic ] ).
+  UniqueInteger = erlang:unique_integer( [ positive, monotonic ] ),
+  % 1 bit sign, 11 bit exponent, 52 bit fraction
+  << UniqueFloatId / float >> = << 0 : 1, 1023 : 11, UniqueInteger : 52 >>, 
+  UniqueFloatId.
 
 % The random_element/1 function accepts a list as input, and returns a single, randomly chosen
 % element as output.
